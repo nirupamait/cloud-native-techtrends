@@ -1,18 +1,21 @@
+##Version of Kubernetes object being used.
 apiVersion: v1
+## Define the type of the resource
 kind: Service
 metadata:
   labels:
     app: techtrends
   name: techtrends
   namespace: sandbox
+## Define the desired configuration for the Service resource
 spec:
   ports:
-  - name: 4111-3111
-    port: 4111
+  - port: 4111
     protocol: TCP
     targetPort: 3111
+  ## Identify the pods managed by this Service using the following selectors.
+  ## In this case, all pods with the label `techtrends`.
   selector:
     app: techtrends
+  ## Define the Service type, here set to ClusterIP.
   type: ClusterIP
-status:
-  loadBalancer: {}

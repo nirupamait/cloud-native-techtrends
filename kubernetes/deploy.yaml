@@ -1,12 +1,16 @@
+#Version of Kubernetes object being used.
 apiVersion: apps/v1
+#Kind of object to create
 kind: Deployment
+#Data that helps uniquely identify object i.e. name etc
 metadata:
   labels:
     app: techtrends
   name: techtrends
   namespace: sandbox
+#Data the state for the object.
 spec:
-  replicas: 1
+  replicas: 1 # tells deployment to run 1 pod matching the template
   selector:
     matchLabels:
       app: techtrends
@@ -15,12 +19,18 @@ spec:
     metadata:
       labels:
         app: techtrends
+      
     spec:
       containers:
-      - image: nashblade/techtrends:latest
+      ## Set the image to be executed inside the container .
+      - image: darsh1234/techtrends:latest
         name: techtrends
+        imagePullPolicy: IfNotPresent
+        ## Expose the port the container is listening on.
+        ## For example, exposing the application port 3111 via TCP.
         ports:
         - containerPort: 3111
+        ## Set the resource requests and limits for an application.
         resources:
           limits:
             cpu: 500m
@@ -28,16 +38,15 @@ spec:
           requests:
             cpu: 250m
             memory: 64Mi
+        ## Define the rules for the readiness probes.
         readinessProbe:
           httpGet:
             path: /healthz
             port: 3111
+        ## Define the rules for the livenessProbe probes.
         livenessProbe:
           httpGet:
               path: /healthz
               port: 3111
-          
-            
-
             
 

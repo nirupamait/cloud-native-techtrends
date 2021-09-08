@@ -1,29 +1,38 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: {{ .Values.namespace }}
+  name: techtrends
   labels:
     app: techtrends
-  name: techtrends
-  namespace: {{ .Values.namespace.name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: techtrends
-  strategy: {}
   template:
     metadata:
       labels:
         app: techtrends
     spec:
       containers:
-        - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        - name: techtrends
+          image: darsh1234/{{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          name: techtrends
           ports:
             - containerPort: {{ .Values.containerPort }}
-          resources: {{- toYaml .Values.resources | nindent 12 }}
-          readinessProbe:
-            httpGet: {{- toYaml .Values.readinessProbe | nindent 14 }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
           livenessProbe:
-            httpGet: {{- toYaml .Values.livenessProbe | nindent 14 }}
+            httpGet:
+              path: {{ .Values.livenessProbe.path }}
+              port: {{ .Values.livenessProbe.port }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.path }}
+              port: {{ .Values.readinessProbe.port }}

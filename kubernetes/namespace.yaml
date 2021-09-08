@@ -1,4 +1,7 @@
+#Version of Kubernetes object being used.
 apiVersion: v1
+#Kind of object to create
 kind: Namespace
+#Data that helps uniquely identify object i.e. name etc
 metadata:
   name: sandbox

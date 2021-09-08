@@ -1,13 +1,20 @@
-import sqlite3
+import sqlite3 #Module of pyhton to create database web aplication
+#Resource:: https://www.javatpoint.com/flask-sqlite
+import logging
 import sys
+
+#First we will run python __init__.py because __init__.py serves double duty: it will contain
+# the application factory, and it tells Python that the flaskr directory should be treated as a package
+#https://flask.palletsprojects.com/en/2.0.x/tutorial/factory/
 from flask import Flask, jsonify, json, render_template, request, url_for, redirect, flash
 from werkzeug.exceptions import abort
-import logging
 
 # Function to get a database connection.
 # This function connects to database with the name `database.db`
 def get_db_connection():
     connection = sqlite3.connect('database.db')
+    global total_db_count #https://www.w3schools.com/python/python_variables_global.asp
+    total_db_count +=1
     connection.row_factory = sqlite3.Row
     return connection
 
@@ -22,6 +29,7 @@ def get_post(post_id):
 # Define the Flask application
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your secret key'
+total_db_count=0 #To find total number of database connections made.
 
 # Define the main route of the web application 
 @app.route('/')
@@ -37,18 +45,16 @@ def index():
 def post(post_id):
     post = get_post(post_id)
     if post is None:
-      app.logger.debug(f'article with post ID {post_id} does not exist.')
+      app.logger.info('A non-existing article is accessed and a 404 page is returned.')
       return render_template('404.html'), 404
     else:
-      app.logger.debug(
-            f'Article "{post["title"]}" page retrieved.')
+      app.logger.info('An existing article is retrieved with title :'+post['title'])
       return render_template('post.html', post=post)
 
 # Define the About Us page
 @app.route('/about')
 def about():
-    app.logger.debug(
-            f'The "About Us" page retrieved.')
+    app.logger.info('The about us page is retrieved.')
     return render_template('about.html')
 
 # Define the post creation functionality 
@@ -66,52 +72,54 @@ def create():
                          (title, content))
             connection.commit()
             connection.close()
-            app.logger.debug(f'New page created, with Title "{title}"')
-
+            
+            app.logger.info('A new article is created with title :' + title)
             return redirect(url_for('index'))
 
     return render_template('create.html')
     
-# Define healthz endpoint
-@app.route('/healthz')
-def healthz():
-    response_body = {'result': 'OK - healthy'}
-    status_code = 200
-
-    try:
-        get_db_connection() 
-    except Exception as exc:
-        response_body['result'] = 'ERROR - unhealthy'
-        response_body['details'] = str(exc)
-        status_code = 500
-
+@app.route('/healtz')
+def healthcheck():
+    '''Return health of application'''
+    con = get_db_connection()
+    print('Connection opened successfully')
     response = app.response_class(
-        response=json.dumps(response_body),
-        status=status_code,
-        mimetype='application/json')
-        
+            response=json.dumps({"result":"OK - healthy"}),
+            status=200,
+            mimetype='application/json'
+    )
+
+    app.logger.info('Status request successfull')
     return response
     
-# Define metrics endpoint
 @app.route('/metrics')
 def metrics():
-    connection = get_db_connection()
-    posts = connection.execute('SELECT * FROM posts').fetchall()
-    connection.close()
-    post_count = len(posts)
-    data = {"db_connection_count": connection_count, "post_count": post_count}
-    return data
+    '''Return metrics(total users and database connections) of application'''
+    con = get_db_connection()
+    print('Connection opened successfully')
+    con_result=con.execute('SELECT COUNT(*) from posts').fetchone()[0]
+    print(con_result)
+    response = app.response_class(
+            response=json.dumps({"status":"success","data":{"db_connection_count":total_db_count,"post_count":con_result}}),
+            status=200,
+            mimetype='application/json'
+    )
+
+    app.logger.info('Metrics request successfull')
+    return response
 
 # start the application on port 3111
 if __name__ == "__main__":
-   FORMAT = '%(asctime)-15s -- %(funcName)s -- %(message)s'
-   logging.basicConfig(
-        level=logging.DEBUG,
-        format=FORMAT,
-        handlers=[
-            logging.FileHandler("app.log"),
-            logging.StreamHandler(),
-            logging.StreamHandler(stream=sys.stdout)
-        ])
-        
-   app.run(host='0.0.0.0', port='3111')
+    # Create a custom logger
+    logger = logging.getLogger(__name__)
+    #Resource::https://www.toptal.com/python/in-depth-python-logging
+    logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d/%d-%yyyy %H:%M:%S',level=logging.DEBUG)
+    s_handler = logging.StreamHandler(sys.stdout)
+    e_handler = logging.StreamHandler(sys.stderr)
+
+    # Add handlers to the logger
+    logger.addHandler(s_handler)
+    logger.addHandler(e_handler)
+
+    app.run(host='0.0.0.0', port='3111')
+    
